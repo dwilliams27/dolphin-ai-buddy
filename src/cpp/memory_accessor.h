@@ -12,6 +12,8 @@ private:
   
   DolphinComm::MacDolphinProcess m_process;
   
+  Napi::Value TestMemoryRegions(const Napi::CallbackInfo& info);
+  Napi::Value TestReadAtOffset(const Napi::CallbackInfo& info);
   Napi::Value Detatch(const Napi::CallbackInfo& info);
   Napi::Value Hook(const Napi::CallbackInfo& info);
   Napi::Value IsHooked(const Napi::CallbackInfo& info);

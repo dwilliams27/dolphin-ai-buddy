@@ -11,7 +11,7 @@ namespace DolphinComm
 public:
   virtual ~IDolphinProcess() {}
   virtual bool findPID() = 0;
-  virtual bool obtainEmuRAMInformations() = 0;
+  virtual bool obtainEmuRAMInformation() = 0;
   virtual bool readFromRAM(const u32 offset, char* buffer, const size_t size,
                            const bool withBSwap) = 0;
   virtual bool writeToRAM(const u32 offset, const char* buffer, const size_t size,
@@ -21,7 +21,7 @@ public:
   u64 getEmuRAMAddressStart() const { return m_emuRAMAddressStart; };
   bool isMEM2Present() const { return m_MEM2Present; };
   bool isARAMAccessible() const { return m_ARAMAccessible; };
-  bool hasEmuRAMInformations() const { return m_emuRAMAddressStart != 0; };
+  bool hasEmuRAMInformation() const { return m_emuRAMAddressStart != 0; };
   u64 getARAMAddressStart() const { return m_emuARAMAdressStart; };
   u64 getMEM2AddressStart() const { return m_MEM2AddressStart; };
   u64 getMEM1ToMEM2Distance() const
@@ -45,7 +45,9 @@ class MacDolphinProcess : public IDolphinProcess
 public:
   MacDolphinProcess() {}
   bool findPID() override;
-  bool obtainEmuRAMInformations() override;
+  bool obtainEmuRAMInformation() override;
+  bool testMemoryRegions();
+  void testReadAtOffset(mach_vm_address_t baseAddr, uint32_t offset);
   void detachFromProcess();
   bool readFromRAM(const u32 offset, char* buffer, size_t size, const bool withBSwap) override;
   bool writeToRAM(const u32 offset, const char* buffer, const size_t size,

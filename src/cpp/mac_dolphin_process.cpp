@@ -6,6 +6,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <iomanip>
 #include <mach/mach_vm.h>
 #include <memory>
 #include <string_view>
@@ -45,97 +46,160 @@ bool MacDolphinProcess::findPID()
   return true;
 }
 
-bool MacDolphinProcess::obtainEmuRAMInformations()
+bool MacDolphinProcess::obtainEmuRAMInformation()
 {
   if (ptrace(PT_ATTACH, m_PID, 0, 0) == 0) {
     int status;
     waitpid(m_PID, &status, 0);
     std::cout << "Successfully attached with ptrace\n";
+    
+    // Make sure the process continues running
+    ptrace(PT_CONTINUE, m_PID, (caddr_t)1, 0);
   } else {
     std::cerr << "Failed to attach with ptrace: " << strerror(errno) << "\n";
-    // Continue anyway, task_for_pid might still work
-  }
-
-  m_currentTask = current_task();
-  mach_port_t task_port;
-  kern_return_t error = task_name_for_pid(m_currentTask, m_PID, &task_port);
-  if (error != KERN_SUCCESS) {
-    std::cout << "KERN fail\n";
-    std::cout << "Error: " << error << "\n";
-
     return false;
   }
-  m_task = task_port;
 
+  m_currentTask = mach_task_self(); // Use this explicitly instead of current_task()
+  std::cout << "Current task: " << m_currentTask << "\n";
+  
+  // Try task_for_pid first, then fall back to task_name_for_pid if needed
+  kern_return_t error = task_for_pid(m_currentTask, m_PID, &m_task);
+  if (error != KERN_SUCCESS) {
+    std::cout << "task_for_pid failed with code: " << error << "\n";
+    std::cout << "Trying task_name_for_pid instead...\n";
+    
+    error = task_name_for_pid(m_currentTask, m_PID, &m_task);
+    if (error != KERN_SUCCESS) {
+      std::cout << "task_name_for_pid also failed with code: " << error << "\n";
+      ptrace(PT_DETACH, m_PID, 0, 0);
+      return false;
+    }
+  }
+  
+  std::cout << "Successfully got task port: " << m_task << "\n";
+  
+  // Try a simpler approach to get memory regions
   mach_vm_address_t regionAddr = 0;
   mach_vm_size_t size = 0;
-  vm_region_extended_info_data_t regInfo;
-  vm_region_basic_info_data_64_t basInfo;
-  vm_region_top_info_data_t topInfo;
-  mach_msg_type_number_t cnt = VM_REGION_EXTENDED_INFO_COUNT;
-  mach_port_t obj;
-  bool MEM1Found = false;
-  unsigned int MEM1Obj = 0;
-  std::cout << "Looping...\n";
-  while (mach_vm_region(m_task, &regionAddr, &size, VM_REGION_EXTENDED_INFO, (int*)&regInfo, &cnt,
-                        &obj) == KERN_SUCCESS)
-  {
-    cnt = VM_REGION_BASIC_INFO_COUNT_64;
-    if (mach_vm_region(m_task, &regionAddr, &size, VM_REGION_BASIC_INFO_64, (int*)&basInfo, &cnt,
-                       &obj) != KERN_SUCCESS)
-      break;
-    cnt = VM_REGION_TOP_INFO_COUNT;
-    if (mach_vm_region(m_task, &regionAddr, &size, VM_REGION_TOP_INFO, (int*)&topInfo, &cnt,
-                       &obj) != 0)
-      break;
-
-    if (!m_MEM2Present && size == Common::GetMEM2Size() &&
-        basInfo.offset == Common::GetMEM1Size() + 0x40000)
-    {
-      std::cout << "m_MEM2Present\n";
-      m_MEM2Present = true;
-      m_MEM2AddressStart = regionAddr;
+  vm_region_basic_info_data_64_t info;
+  mach_msg_type_number_t count = VM_REGION_BASIC_INFO_COUNT_64;
+  mach_port_t object_name;
+  
+  std::cout << "Scanning memory regions with simplified approach:\n";
+  int regionCount = 0;
+  
+  // Use basic info only at first to see if we can get any regions
+  while (mach_vm_region(m_task, &regionAddr, &size, VM_REGION_BASIC_INFO_64, 
+                        (vm_region_info_t)&info, &count, &object_name) == KERN_SUCCESS) {
+    regionCount++;
+    
+    // Log only some regions to avoid excessive output
+    if (regionCount % 100 == 0 || size > 0x1000000) {
+      std::cout << "Region " << regionCount << ": addr=0x" << std::hex << regionAddr 
+                << ", size=0x" << size 
+                << ", protection=0x" << info.protection 
+                << std::dec << "\n";
     }
-
-    // if these are true, then it is very likely the correct region, but we cannot guarantee
-    if ((!MEM1Found || (MEM1Found && MEM1Obj == topInfo.obj_id)) && size == Common::GetMEM1Size() &&
-        regInfo.share_mode == SM_TRUESHARED &&
-        basInfo.max_protection == (VM_PROT_READ | VM_PROT_WRITE))
-    {
-      if (basInfo.offset == 0x0)
-      {
-        m_emuRAMAddressStart = regionAddr;
-        MEM1Found = true;
-      }
-      else if (basInfo.offset == Common::GetMEM1Size() + 0x40000)
-      {
-        m_emuARAMAdressStart = regionAddr;
-        m_ARAMAccessible = true;
-      }
-
-      std::cout << "MEM1Found\n";
-      MEM1Found = true;
-      MEM1Obj = topInfo.obj_id;
-    }
-
+    
+    // Move to next region
     regionAddr += size;
-    cnt = VM_REGION_EXTENDED_INFO_COUNT;
+    count = VM_REGION_BASIC_INFO_COUNT_64;
   }
+  
+  std::cout << "Total regions scanned: " << regionCount << "\n";
 
-  if (m_MEM2Present)
-  {
-    std::cout << "m_ARAMAccessible\n";
-    m_emuARAMAdressStart = 0;
-    m_ARAMAccessible = false;
+  // Clean up
+  ptrace(PT_DETACH, m_PID, 0, 0);
+  
+  // For debugging purposes, return true if we found any regions at all
+  return (regionCount > 0);
+}
+
+bool MacDolphinProcess::testMemoryRegions()
+{
+  // Try to read from potential memory regions
+  const int numCandidates = 9;
+  mach_vm_address_t candidates[numCandidates] = {
+    0x11e800000, 0x126840000, 0x133800000, 0x161000000, 
+    0x1ea000000, 0x1ebee4000, 0x22a72c000, 0x22cc88000, 0x282000000
+  };
+  
+  std::cout << "Testing potential memory regions:\n";
+  
+  for (int i = 0; i < numCandidates; i++) {
+    mach_vm_address_t addr = candidates[i];
+    
+    // Try to read 256 bytes from the region
+    char buffer[256];
+    vm_size_t bytesRead;
+    kern_return_t result = vm_read_overwrite(m_task, addr, 256, 
+                                           (vm_address_t)buffer, &bytesRead);
+    
+    if (result == KERN_SUCCESS) {
+      std::cout << "Successfully read from region at 0x" << std::hex << addr << std::dec << "\n";
+      
+      // Print first 16 bytes in hex to examine the content
+      std::cout << "First 16 bytes: ";
+      for (int j = 0; j < 16; j++) {
+        std::cout << std::hex << std::setw(2) << std::setfill('0') 
+                  << (int)(unsigned char)buffer[j] << " ";
+      }
+      std::cout << std::dec << "\n";
+      
+      // If we see typical GC/Wii header bytes or patterns, this might be it
+      // GameCube and Wii games often have recognizable data at specific offsets
+      
+      // Check for some common values in RAM when Dolphin is running
+      // For example, 0x80000000 is often the base address in GC memory
+      uint32_t value;
+      std::memcpy(&value, buffer, sizeof(uint32_t));
+      
+      // Just a heuristic - if values look like pointers in the GameCube's address space
+      // (often starting with 0x8...)
+      if ((value & 0x80000000) || 
+          // Or check for other patterns you might expect
+          (buffer[0] == 0x00 && buffer[1] == 0x00 && buffer[2] == 0x00)) {
+        
+        std::cout << "This region has patterns consistent with GameCube/Wii memory!\n";
+        m_emuRAMAddressStart = addr;
+        
+        // Try reading from a few known offsets where certain values should be
+        // For example, many GameCube games store important data at specific addresses
+        testReadAtOffset(addr, 0x0);       // Game start
+        testReadAtOffset(addr, 0x80000000); // Common GC memory mapping start
+        testReadAtOffset(addr, 0x8000);     // Some games have important data here
+        
+        return true;
+      }
+    } else {
+      std::cout << "Failed to read from region at 0x" << std::hex << addr 
+                << ", error: " << result << std::dec << "\n";
+    }
   }
-
-  if (m_emuRAMAddressStart != 0) {
-    std::cout << "m_emuRAMAddressStart is 0 rip\n";
-    return true;
-  }
-
-  // Here, Dolphin appears to be running, but the emulator isn't started
+  
+  std::cout << "None of the memory regions match expected patterns\n";
   return false;
+}
+
+void MacDolphinProcess::testReadAtOffset(mach_vm_address_t baseAddr, uint32_t offset)
+{
+  char buffer[32];
+  vm_size_t bytesRead;
+  kern_return_t result = vm_read_overwrite(m_task, baseAddr + offset, 32, 
+                                         (vm_address_t)buffer, &bytesRead);
+  
+  if (result == KERN_SUCCESS) {
+    std::cout << "Read at offset 0x" << std::hex << offset << ": ";
+    for (int i = 0; i < 16; i++) {
+      std::cout << std::setw(2) << std::setfill('0') 
+                << (int)(unsigned char)buffer[i] << " ";
+    }
+    std::cout << std::dec << "\n";
+  } else {
+    std::cout << "Failed to read at offset 0x" << std::hex << offset 
+              << ", error: " << result << std::dec << "\n";
+  }
 }
 
 void MacDolphinProcess::detachFromProcess()
