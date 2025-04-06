@@ -9,7 +9,7 @@ Napi::Object MemoryAccessor::Init(Napi::Env env, Napi::Object exports) {
 
   Napi::Function func = DefineClass(env, "MemoryAccessor", {
     InstanceMethod("testMemoryRegions", &MemoryAccessor::TestMemoryRegions),
-    InstanceMethod("testReadAtOffset", &MemoryAccessor::TestReadAtOffset),
+    InstanceMethod("readAtOffset", &MemoryAccessor::ReadAtOffset),
     InstanceMethod("detatch", &MemoryAccessor::Detatch),
     InstanceMethod("hook", &MemoryAccessor::Hook),
     InstanceMethod("isHooked", &MemoryAccessor::IsHooked),
@@ -48,26 +48,39 @@ Napi::Value MemoryAccessor::TestMemoryRegions(const Napi::CallbackInfo& info) {
   return Napi::Boolean::New(env, true);
 }
 
-Napi::Value MemoryAccessor::TestReadAtOffset(const Napi::CallbackInfo& info) {
+Napi::Value MemoryAccessor::ReadAtOffset(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Napi::HandleScope scope(env);
 
-  if (info.Length() < 2) {
-    Napi::TypeError::New(env, "Address and offset arguments expected").ThrowAsJavaScriptException();
+  if (info.Length() < 3) {
+    Napi::TypeError::New(env, "Address, offset, and size arguments expected").ThrowAsJavaScriptException();
     return env.Null();
   }
 
-  if (!info[0].IsNumber() || !info[1].IsNumber()) {
-    Napi::TypeError::New(env, "Address and offset must be numbers").ThrowAsJavaScriptException();
+  if (!info[0].IsBigInt() || !info[1].IsNumber() || !info[2].IsNumber()) {
+    Napi::TypeError::New(env, "Address must be bigint, offset and size must be numbers").ThrowAsJavaScriptException();
     return env.Null();
   }
 
-  uint64_t baseAddr = info[0].As<Napi::Number>().ToNumber().Int64Value();
+  bool lossless;
+  uint64_t baseAddr = info[0].As<Napi::BigInt>().Uint64Value(&lossless);
+  if (!lossless) {
+    Napi::Error::New(env, "Address conversion was not lossless").ThrowAsJavaScriptException();
+    return env.Null();
+  }
   uint32_t offset = info[1].As<Napi::Number>().ToNumber().Uint32Value();
+  size_t size = info[2].As<Napi::Number>().Uint32Value();
+  std::vector<uint8_t> bytes(size);
 
-  m_process.testReadAtOffset(baseAddr, offset);
+  bool success = m_process.readAtOffset(baseAddr, offset, reinterpret_cast<char*>(bytes.data()), size);
 
-  return Napi::Boolean::New(env, true);
+  if (!success) {
+    Napi::Error::New(env, "ReadAtOffset: Failed to read memory").ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
+  Napi::Buffer<uint8_t> buffer = Napi::Buffer<uint8_t>::Copy(env, bytes.data(), size);
+  return buffer;
 }
 
 Napi::Value MemoryAccessor::Hook(const Napi::CallbackInfo& info) {

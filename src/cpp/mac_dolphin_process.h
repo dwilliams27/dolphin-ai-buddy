@@ -47,7 +47,7 @@ public:
   bool findPID() override;
   bool obtainEmuRAMInformation() override;
   bool testMemoryRegions();
-  void testReadAtOffset(mach_vm_address_t baseAddr, uint32_t offset);
+  bool readAtOffset(mach_vm_address_t baseAddr, uint32_t offset, char* buffer, size_t size);
   void detachFromProcess();
   bool readFromRAM(const u32 offset, char* buffer, size_t size, const bool withBSwap) override;
   bool writeToRAM(const u32 offset, const char* buffer, const size_t size,

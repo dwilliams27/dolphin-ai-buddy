@@ -166,9 +166,10 @@ bool MacDolphinProcess::testMemoryRegions()
         
         // Try reading from a few known offsets where certain values should be
         // For example, many GameCube games store important data at specific addresses
-        testReadAtOffset(addr, 0x0);       // Game start
-        testReadAtOffset(addr, 0x80000000); // Common GC memory mapping start
-        testReadAtOffset(addr, 0x8000);     // Some games have important data here
+        char buffer[32];
+        readAtOffset(addr, 0x0, buffer, 32);       // Game start
+        readAtOffset(addr, 0x80000000, buffer, 32); // Common GC memory mapping start
+        readAtOffset(addr, 0x8000, buffer, 32);     // Some games have important data here
         
         return true;
       }
@@ -182,24 +183,16 @@ bool MacDolphinProcess::testMemoryRegions()
   return false;
 }
 
-void MacDolphinProcess::testReadAtOffset(mach_vm_address_t baseAddr, uint32_t offset)
+bool MacDolphinProcess::readAtOffset(mach_vm_address_t baseAddr, uint32_t offset, char* buffer, size_t size)
 {
-  char buffer[32];
   vm_size_t bytesRead;
-  kern_return_t result = vm_read_overwrite(m_task, baseAddr + offset, 32, 
+  kern_return_t result = vm_read_overwrite(m_task, baseAddr + offset, size, 
                                          (vm_address_t)buffer, &bytesRead);
-  
-  if (result == KERN_SUCCESS) {
-    std::cout << "Read at offset 0x" << std::hex << offset << ": ";
-    for (int i = 0; i < 16; i++) {
-      std::cout << std::setw(2) << std::setfill('0') 
-                << (int)(unsigned char)buffer[i] << " ";
-    }
-    std::cout << std::dec << "\n";
-  } else {
-    std::cout << "Failed to read at offset 0x" << std::hex << offset 
-              << ", error: " << result << std::dec << "\n";
+
+  if (result != KERN_SUCCESS) {
+    return false;
   }
+  return true;
 }
 
 void MacDolphinProcess::detachFromProcess()
@@ -232,11 +225,16 @@ bool MacDolphinProcess::readFromRAM(const u32 offset, char* buffer, size_t size,
     RAMAddress = m_emuRAMAddressStart + offset;
   }
 
-  if (vm_read_overwrite(m_task, RAMAddress, size, reinterpret_cast<vm_address_t>(buffer), &nread) !=
-      KERN_SUCCESS)
+  std::cout << "RAMAddress: " << RAMAddress << "\n";
+
+  if (vm_read_overwrite(m_task, RAMAddress, size, reinterpret_cast<vm_address_t>(buffer), &nread) != KERN_SUCCESS) {
+    std::cout << "Failed vm_read_overwrite\n";
     return false;
-  if (nread != size)
+  }
+  if (nread != size) {
+    std::cout << "nread != size\n";
     return false;
+  }
 
   if (withBSwap)
   {
