@@ -5,6 +5,7 @@
       "sources": [
         "src/cpp/main.cpp",
         "src/cpp/memory_accessor.cpp",
+        "src/cpp/memory_common.cpp",
         "src/cpp/mac_dolphin_process.cpp"
       ],
       "include_dirs": ["<!@(node -p \"require('node-addon-api').include\")"],

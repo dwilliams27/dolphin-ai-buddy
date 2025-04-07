@@ -8,9 +8,7 @@ Napi::Object MemoryAccessor::Init(Napi::Env env, Napi::Object exports) {
   Napi::HandleScope scope(env);
 
   Napi::Function func = DefineClass(env, "MemoryAccessor", {
-    InstanceMethod("testMemoryRegions", &MemoryAccessor::TestMemoryRegions),
     InstanceMethod("readAtOffset", &MemoryAccessor::ReadAtOffset),
-    InstanceMethod("detatch", &MemoryAccessor::Detatch),
     InstanceMethod("hook", &MemoryAccessor::Hook),
     InstanceMethod("isHooked", &MemoryAccessor::IsHooked),
     InstanceMethod("readBytes", &MemoryAccessor::ReadBytes),
@@ -30,24 +28,6 @@ MemoryAccessor::MemoryAccessor(const Napi::CallbackInfo& info)
   Napi::HandleScope scope(env);
 }
 
-Napi::Value MemoryAccessor::Detatch(const Napi::CallbackInfo& info) {
-  Napi::Env env = info.Env();
-  Napi::HandleScope scope(env);
-
-  m_process.detachFromProcess();
-
-  return Napi::Boolean::New(env, true);
-}
-
-Napi::Value MemoryAccessor::TestMemoryRegions(const Napi::CallbackInfo& info) {
-  Napi::Env env = info.Env();
-  Napi::HandleScope scope(env);
-
-  m_process.testMemoryRegions();
-
-  return Napi::Boolean::New(env, true);
-}
-
 Napi::Value MemoryAccessor::ReadAtOffset(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Napi::HandleScope scope(env);
@@ -57,18 +37,25 @@ Napi::Value MemoryAccessor::ReadAtOffset(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  if (!info[0].IsBigInt() || !info[1].IsNumber() || !info[2].IsNumber()) {
-    Napi::TypeError::New(env, "Address must be bigint, offset and size must be numbers").ThrowAsJavaScriptException();
+  if ((!info[0].IsNumber() && !info[0].IsBigInt()) || !info[1].IsNumber() || !info[2].IsNumber()) {
+    Napi::TypeError::New(env, "Address must be a number or bigint, offset and size must be numbers").ThrowAsJavaScriptException();
     return env.Null();
   }
 
-  bool lossless;
-  uint64_t baseAddr = info[0].As<Napi::BigInt>().Uint64Value(&lossless);
-  if (!lossless) {
-    Napi::Error::New(env, "Address conversion was not lossless").ThrowAsJavaScriptException();
-    return env.Null();
+  uint64_t baseAddr;
+  if (info[0].IsBigInt()) {
+    bool lossless;
+    baseAddr = info[0].As<Napi::BigInt>().Uint64Value(&lossless);
+    if (!lossless) {
+      Napi::Error::New(env, "Address conversion was not lossless").ThrowAsJavaScriptException();
+      return env.Null();
+    }
+  } else {
+    // Handle regular number
+    baseAddr = static_cast<uint64_t>(info[0].As<Napi::Number>().DoubleValue());
   }
-  uint32_t offset = info[1].As<Napi::Number>().ToNumber().Uint32Value();
+
+  uint32_t offset = info[1].As<Napi::Number>().Uint32Value();
   size_t size = info[2].As<Napi::Number>().Uint32Value();
   std::vector<uint8_t> bytes(size);
 
@@ -88,12 +75,15 @@ Napi::Value MemoryAccessor::Hook(const Napi::CallbackInfo& info) {
   Napi::HandleScope scope(env);
 
   bool success = m_process.findPID();
+  
   if (success) {
     std::cout << "Found Dolphin PID!\n";
     success = m_process.obtainEmuRAMInformation();
   }
 
-  return Napi::Boolean::New(env, success);
+  u64 emuRAMAddressStart = m_process.getEmuRAMAddressStart();
+
+  return Napi::Number::New(env, emuRAMAddressStart);
 }
 
 Napi::Value MemoryAccessor::IsHooked(const Napi::CallbackInfo& info) {

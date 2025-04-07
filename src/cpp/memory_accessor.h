@@ -14,6 +14,7 @@ private:
   
   Napi::Value TestMemoryRegions(const Napi::CallbackInfo& info);
   Napi::Value ReadAtOffset(const Napi::CallbackInfo& info);
+  Napi::Value ScanMemoryRegions(const Napi::CallbackInfo& info);
   Napi::Value Detatch(const Napi::CallbackInfo& info);
   Napi::Value Hook(const Napi::CallbackInfo& info);
   Napi::Value IsHooked(const Napi::CallbackInfo& info);

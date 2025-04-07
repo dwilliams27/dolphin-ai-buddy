@@ -1,8 +1,15 @@
 #pragma once
 
 #include <mach/mach.h>
+#include <vector>
 
 #include "common_types.h"
+
+struct MemoryRegionInfo {
+  mach_vm_address_t address;
+  mach_vm_size_t size;
+  vm_prot_t protection;
+};
 
 namespace DolphinComm
 {
@@ -46,9 +53,7 @@ public:
   MacDolphinProcess() {}
   bool findPID() override;
   bool obtainEmuRAMInformation() override;
-  bool testMemoryRegions();
   bool readAtOffset(mach_vm_address_t baseAddr, uint32_t offset, char* buffer, size_t size);
-  void detachFromProcess();
   bool readFromRAM(const u32 offset, char* buffer, size_t size, const bool withBSwap) override;
   bool writeToRAM(const u32 offset, const char* buffer, const size_t size,
                   const bool withBSwap) override;
