@@ -3,19 +3,27 @@
   "version": "1.0.0",
   "description": "Tools for reading/writing memory to dolphin games on mac",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "build:cpp": "node-gyp rebuild",
-    "build:ts": "tsc",
-    "build": "npm run build:cpp && npm run build:ts"
+    "build": "npm run build:cpp && vite build",
+    "dev": "vite-node --watch src/ts/index.ts",
+    "start": "node dist/index.cjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/express": "^5.0.1",
     "@types/node": "^22.14.0",
     "cmake-js": "^7.3.0",
     "node-addon-api": "^8.3.1",
     "node-gyp": "^11.2.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vite": "^6.2.5",
+    "vite-node": "^3.1.1"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
   }
 }
