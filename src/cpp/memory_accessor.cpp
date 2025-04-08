@@ -97,9 +97,8 @@ Napi::Value MemoryAccessor::WriteAtOffset(const Napi::CallbackInfo& info) {
   }
 
   uint32_t offset = info[1].As<Napi::Number>().Uint32Value();
-  size_t size = info[2].As<Napi::Number>().Uint32Value();
-  Napi::Buffer<uint8_t> buffer = info[3].As<Napi::Buffer<uint8_t>>();
-  std::vector<uint8_t> bytes(size);
+  Napi::Buffer<uint8_t> buffer = info[2].As<Napi::Buffer<uint8_t>>();
+  size_t size = info[3].As<Napi::Number>().Uint32Value();
 
   bool success = m_process.writeAtOffset(baseAddr, offset, reinterpret_cast<char*>(buffer.Data()), size);
 

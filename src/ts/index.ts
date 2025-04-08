@@ -22,7 +22,7 @@ export class DolphinMemoryEngine {
   }
 
   writeAtOffset(baseAddress: bigint | number, offset: number, buffer: Buffer, size: number): boolean {
-    return this.accessor.writeAtOffset(baseAddress, offset, size);
+    return this.accessor.writeAtOffset(baseAddress, offset, buffer, size);
   }
 }
 
