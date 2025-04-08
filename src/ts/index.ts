@@ -22,7 +22,7 @@ export class DolphinMemoryEngine {
   }
 
   writeAtOffset(baseAddress: bigint | number, offset: number, buffer: Buffer, size: number): boolean {
-    return this.accessor.readAtOffset(baseAddress, offset, size);
+    return this.accessor.writeAtOffset(baseAddress, offset, size);
   }
 }
 
@@ -37,6 +37,13 @@ async function init() {
   const data = engine.readAtOffset(startAddress, 0x0, 256);
   console.log("Memory dump:");
   console.log(hexDump(data));
+
+  const buff = Buffer.from([0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
+  engine.writeAtOffset(startAddress, 0x0, buff, buff.length);
+
+  const data2 = engine.readAtOffset(startAddress, 0x0, 256);
+  console.log("Memory dump after:");
+  console.log(hexDump(data2));
 
   const strings = extractStringsFromBuffer(data);
   console.log("Extracted strings:");
