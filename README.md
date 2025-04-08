@@ -55,4 +55,4 @@ cd certs
 Note: This also runs the app via `sudo`, definitely not ideal :(
 
 ## cpp
-Most of the C++ integration comes from randovania's [py-dolphin-memory-engine](https://github.com/randovania/py-dolphin-memory-engine), used under the MIT license.
+C++ integration based on randovania's [py-dolphin-memory-engine](https://github.com/randovania/py-dolphin-memory-engine), used under the MIT license.
