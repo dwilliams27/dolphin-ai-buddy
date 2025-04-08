@@ -16,29 +16,13 @@ export class DolphinMemoryEngine {
   isHooked(): boolean {
     return this.accessor.isHooked();
   }
-  
-  readBytes(address: number, size: number): Buffer {
-    return this.accessor.readBytes(address, size);
-  }
-  
-  writeBytes(address: number, buffer: Buffer): boolean {
-    return this.accessor.writeBytes(address, buffer);
-  }
 
   readAtOffset(baseAddress: bigint | number, offset: number, size: number): Buffer {
     return this.accessor.readAtOffset(baseAddress, offset, size);
   }
-  
-  // Helper methods for common types
-  readUInt8(address: number): number {
-    const buffer = this.readBytes(address, 1);
-    return buffer.readUInt8(0);
-  }
-  
-  readUInt32(address: number): number {
-    const buffer = this.readBytes(address, 4);
-    // GameCube/Wii use big-endian
-    return buffer.readUInt32BE(0);
+
+  writeAtOffset(baseAddress: bigint | number, offset: number, buffer: Buffer, size: number): boolean {
+    return this.accessor.readAtOffset(baseAddress, offset, size);
   }
 }
 
