@@ -1,4 +1,5 @@
 import { DolphinMemoryEngine } from "@/ts/dolphin-memory-engine.js";
+import { hexToBytes } from "@/ts/utils.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -31,10 +32,10 @@ export class DabMcpServer {
   registerBasicTools() {
     this.server.tool(
       "readBytes",
-      "Read memory directly from the emulator's RAM. Specify the offset from the start of the emulated RAM in bytes, and the number of bytes to read.",
-      { offset: z.number(), numberOfBytesToRead: z.number() },
+      "Read memory directly from the emulator's RAM. You MUST specify both an offset (as a hex string) from the starting address of the game's RAM, and the number of bytes to read.",
+      { offset: z.string(), numberOfBytesToRead: z.number().nonnegative() },
       async ({ offset, numberOfBytesToRead }) => {
-        const data = this.dme?.read(offset, numberOfBytesToRead);
+        const data = this.dme?.read(hexToBytes(offset), numberOfBytesToRead);
         return {
           content: [
             { type: "text", text: `Read ${numberOfBytesToRead} bytes from offset ${offset}` },
@@ -45,11 +46,11 @@ export class DabMcpServer {
     );
     this.server.tool(
       "writeBytes",
-      "Write memory directly to the emulator's RAM. Specify the offset from the start of the emulated RAM in bytes, and a string of hex data to write.",
-      { offset: z.number(), data: z.string() },
+      "Write memory directly to the emulator's RAM.  You MUST specify both an offset (as a hex string) from the starting address of the game's RAM, and a hex string representing the bytes to write.",
+      { offset: z.string(), data: z.string() },
       async ({ offset, data }) => {
         const buffer = Buffer.from(data, "hex");
-        const success = this.dme?.write(offset, buffer);
+        const success = this.dme?.write(hexToBytes(offset), buffer);
         return {
           content: [
             { type: "text", text: `Wrote ${buffer.length} bytes to offset ${offset}` },

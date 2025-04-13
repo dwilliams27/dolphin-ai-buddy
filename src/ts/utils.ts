@@ -46,3 +46,18 @@ export function extractStringsFromBuffer(buffer: Buffer): string[] {
   
   return strings;
 }
+
+export function hexToBytes(hexString: string) {
+  // Remove '0x' prefix if present
+  if (hexString.startsWith('0x') || hexString.startsWith('0X')) {
+    hexString = hexString.slice(2);
+  }
+  
+  // Validate the hex string
+  if (!/^[0-9A-Fa-f]+$/.test(hexString)) {
+    throw new Error('Invalid hexadecimal string');
+  }
+  
+  // Convert hex to decimal
+  return parseInt(hexString, 16);
+}
