@@ -7,6 +7,7 @@
   "scripts": {
     "build:cpp": "node-gyp rebuild",
     "build": "npm run build:cpp && vite build",
+    "debug-mcp": "npx @modelcontextprotocol/inspector node ./dist/index.cjs",
     "dev": "vite-node --watch src/ts/index.ts",
     "start": "node dist/index.cjs"
   },
@@ -24,6 +25,9 @@
     "vite-node": "^3.1.1"
   },
   "dependencies": {
-    "express": "^5.1.0"
+    "@modelcontextprotocol/sdk": "^1.9.0",
+    "mcp-server": "^0.0.9",
+    "socket.io": "^4.8.1",
+    "zod": "^3.24.2"
   }
 }

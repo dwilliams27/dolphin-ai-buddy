@@ -12,7 +12,7 @@ export class DolphinMemoryEngine {
     DolphinMemoryEngine.instance = this;
     this.accessor = new dolphinMemory.MemoryAccessor();
     this.emuRamStartAddress = this.hook();
-    console.log("Start address:", this.emuRamStartAddress.toString(16));
+    console.error("## Start address:", this.emuRamStartAddress.toString(16));
   }
   
   private hook(): number {

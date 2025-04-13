@@ -112,7 +112,7 @@ Napi::Value MemoryAccessor::Hook(const Napi::CallbackInfo& info) {
   bool success = m_process.findPID();
   
   if (success) {
-    std::cout << "Found Dolphin PID!\n";
+    std::cerr << "## Found Dolphin PID!\n";
     success = m_process.obtainEmuRAMInformation();
   }
 

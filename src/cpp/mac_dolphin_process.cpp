@@ -44,32 +44,32 @@ namespace DolphinComm {
     if (ptrace(PT_ATTACH, m_PID, 0, 0) == 0) {
       int status;
       waitpid(m_PID, &status, 0);
-      std::cout << "Successfully attached with ptrace\n";
+      std::cerr << "## Successfully attached with ptrace\n";
       
       ptrace(PT_DETACH, m_PID, 0, 0);
     } else {
-      std::cerr << "Failed to attach with ptrace: " << strerror(errno) << "; did you re-sign Dolphin and node? Could be a SIP issue\n";
+      std::cerr << "## Failed to attach with ptrace: " << strerror(errno) << "; did you re-sign Dolphin and node? Could be a SIP issue\n";
       return false;
     }
 
     m_currentTask = mach_task_self();
-    std::cout << "Current task: " << m_currentTask << "\n";
+    std::cerr << "## Current task: " << m_currentTask << "\n";
     
     // Try task_for_pid first, then fall back to task_name_for_pid if needed
     kern_return_t error = task_for_pid(m_currentTask, m_PID, &m_task);
     if (error != KERN_SUCCESS) {
-      std::cout << "task_for_pid failed with code: " << error << "\n";
-      std::cout << "Trying task_name_for_pid instead...\n";
+      std::cerr << "## task_for_pid failed with code: " << error << "\n";
+      std::cerr << "## Trying task_name_for_pid instead...\n";
       
       error = task_name_for_pid(m_currentTask, m_PID, &m_task);
       if (error != KERN_SUCCESS) {
-        std::cout << "task_name_for_pid also failed with code: " << error << "\n";
+        std::cerr << "## task_name_for_pid also failed with code: " << error << "\n";
         ptrace(PT_DETACH, m_PID, 0, 0);
         return false;
       }
     }
     
-    std::cout << "Successfully got task port: " << m_task << "\n";
+    std::cerr << "## Successfully got task port: " << m_task << "\n";
     
     mach_vm_address_t regionAddr = 0;
     mach_vm_size_t size = 0;
@@ -110,12 +110,11 @@ namespace DolphinComm {
     }
 
     if (m_emuRAMAddressStart != 0) {
-      std::cout << "Found emulated RAM at address 0x" << std::hex << m_emuRAMAddressStart;
-      std::cout << std::dec << "\n";
+      std::cerr << "## Found emulated RAM at address 0x" << std::hex << m_emuRAMAddressStart << std::dec << "\n";
       return true;
     }
 
-    std::cout << "Failed to find emulated RAM address\n";
+    std::cerr << "## Failed to find emulated RAM address\n";
     return false;
   }
 
