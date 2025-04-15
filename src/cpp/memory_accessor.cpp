@@ -12,6 +12,7 @@ Napi::Object MemoryAccessor::Init(Napi::Env env, Napi::Object exports) {
     InstanceMethod("writeAtOffset", &MemoryAccessor::WriteAtOffset),
     InstanceMethod("hook", &MemoryAccessor::Hook),
     InstanceMethod("isHooked", &MemoryAccessor::IsHooked),
+    InstanceMethod("getPID", &MemoryAccessor::GetPID),
   });
 
   constructor = Napi::Persistent(func);
@@ -128,4 +129,13 @@ Napi::Value MemoryAccessor::IsHooked(const Napi::CallbackInfo& info) {
   bool hooked = m_process.hasEmuRAMInformation();
   
   return Napi::Boolean::New(env, hooked);
+}
+
+Napi::Value MemoryAccessor::GetPID(const Napi::CallbackInfo& info) {
+  Napi::Env env = info.Env();
+  Napi::HandleScope scope(env);
+
+  int pid = m_process.getPID();
+  
+  return Napi::Number::New(env, pid);
 }

@@ -1,6 +1,6 @@
 import { extractStringsFromBuffer, hexDump } from '@/ts/utils.js';
 import { DabMcpServer } from '@/ts/mcp.js';
-import { DolphinMemoryEngine } from '@/ts/dolphin-memory-engine.js';
+import { DolphinMemoryEngine } from '@/ts/dolphin/dolphin-memory-engine.js';
 
 // async function initMemoryEngine() {
 //   console.log("Initializing Dolphin Memory Engine...");

@@ -1,4 +1,10 @@
-import dolphinMemory from "@/ts/native-module.js";
+import native from "@/ts/native-module.js";
+
+// TODO
+// Tool: Save memory snapshot
+// Resource?: Read past memory snapshot
+// Tool: "Pointer chain following" hmm
+// Tool/resource: DB of known addresses for games
 
 export class DolphinMemoryEngine {
   private static instance: DolphinMemoryEngine;
@@ -10,7 +16,7 @@ export class DolphinMemoryEngine {
       throw new Error("DolphinMemoryEngine is a singleton class");
     }
     DolphinMemoryEngine.instance = this;
-    this.accessor = new dolphinMemory.MemoryAccessor();
+    this.accessor = new native.dolphinMemory.MemoryAccessor();
     this.emuRamStartAddress = this.hook();
     console.error("## Start address:", this.emuRamStartAddress.toString(16));
   }

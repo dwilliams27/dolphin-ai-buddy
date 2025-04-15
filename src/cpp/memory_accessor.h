@@ -17,4 +17,5 @@ private:
   Napi::Value Detatch(const Napi::CallbackInfo& info);
   Napi::Value Hook(const Napi::CallbackInfo& info);
   Napi::Value IsHooked(const Napi::CallbackInfo& info);
+  Napi::Value GetPID(const Napi::CallbackInfo& info);
 };

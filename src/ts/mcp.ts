@@ -1,4 +1,4 @@
-import { DolphinMemoryEngine } from "@/ts/dolphin-memory-engine.js";
+import { DolphinMemoryEngine } from "@/ts/dolphin/dolphin-memory-engine.js";
 import { hexToBytes } from "@/ts/utils.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
