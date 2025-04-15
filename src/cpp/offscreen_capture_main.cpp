@@ -16,8 +16,14 @@ Napi::Value CaptureWindowByPID(const Napi::CallbackInfo& info) {
     // Get the PID from the arguments
     pid_t pid = info[0].As<Napi::Number>().Int32Value();
     
+    // Get the optional gameId
+    std::string gameId = "";
+    if (info.Length() >= 2 && info[1].IsString()) {
+        gameId = info[1].As<Napi::String>().Utf8Value();
+    }
+    
     // Capture the window
-    offscreen_capture::CaptureResult result = offscreen_capture::CaptureWindowByPID(pid);
+    offscreen_capture::CaptureResult result = offscreen_capture::CaptureWindowByPID(pid, gameId);
     
     // Create a return object
     Napi::Object returnObj = Napi::Object::New(env);

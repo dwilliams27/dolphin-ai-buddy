@@ -32,10 +32,9 @@ const mcpInstance = new DabMcpServer();
 mcpInstance.connect();
 
 const dme = new DolphinMemoryEngine();
+// captureDolphinOffscreen('screenshot.png', dme.getPID(), dme.gameID);
 
 mcpInstance.setDME(dme);
-
-captureDolphinOffscreen('screenshot.png', dme.getPID());
 
 process.on('SIGINT', () => {
   console.log('Shutting down MCP server...');
