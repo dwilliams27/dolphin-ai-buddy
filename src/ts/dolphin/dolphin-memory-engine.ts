@@ -36,4 +36,8 @@ export class DolphinMemoryEngine {
   write(offset: number, buffer: Buffer): boolean {
     return this.accessor.writeAtOffset(this.emuRamStartAddress, offset, buffer, buffer.length);
   }
+
+  getPID() {
+    return this.accessor.getPID();
+  }
 }
