@@ -1,3 +1,9 @@
+import { stat } from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
+
+export const SCREENSHOTS_DIR = `${path.dirname(fileURLToPath(import.meta.url))}/screenshots`;
+
 export function hexDump(buffer: Buffer): string {
   let result = '';
   const lineWidth = 16;
@@ -71,4 +77,15 @@ export function generateTimestampedFilename(prefix: string, extension: string): 
     String(now.getSeconds()).padStart(2, '0');
   
   return `${prefix}_${timestamp}.${extension}`;
+}
+
+export async function isPngFile(filePath: string): Promise<boolean> {
+  try {
+    const stats = await stat(filePath);
+    if (!stats.isFile()) return false;
+    
+    return path.extname(filePath).toLowerCase() === '.png';
+  } catch (error) {
+    return false;
+  }
 }

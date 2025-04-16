@@ -1,8 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import native from "@/ts/native-module.js";
-import { generateTimestampedFilename } from '@/ts/utils.js';
-import { fileURLToPath } from 'url';
-import path from 'path';
+import { generateTimestampedFilename, SCREENSHOTS_DIR } from '@/ts/utils.js';
 
 export function captureDolphinOffscreen(pid: number, gameID: string) {
   const imageData = native.dolphinScreenGrab.captureWindowByPID(pid, gameID);
@@ -11,10 +9,9 @@ export function captureDolphinOffscreen(pid: number, gameID: string) {
     return new Error('Failed to capture window content');
   }
 
-  const screenshotsDir = `${path.dirname(fileURLToPath(import.meta.url))}/screenshots`;
-  if (!existsSync(screenshotsDir)) mkdirSync(screenshotsDir, { recursive: true });
+  if (!existsSync(SCREENSHOTS_DIR)) mkdirSync(SCREENSHOTS_DIR, { recursive: true });
   const filename = generateTimestampedFilename('screenshot', 'png');
-  const outputPath = `${screenshotsDir}/${filename}`;
+  const outputPath = `${SCREENSHOTS_DIR}/${filename}`;
   writeFileSync(outputPath, imageData.buffer);
   console.error(`Screenshot saved to: ${outputPath}`);
 

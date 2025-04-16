@@ -1,8 +1,10 @@
 import { captureDolphinOffscreen } from "@/ts/dolphin/dolphin-interactor.js";
 import { DolphinMemoryEngine } from "@/ts/dolphin/dolphin-memory-engine.js";
-import { hexToBytes } from "@/ts/utils.js";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { hexToBytes, isPngFile, SCREENSHOTS_DIR } from "@/ts/utils.js";
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { readdir, readFile } from "fs/promises";
+import path from "path";
 import { z } from "zod";
 
 export interface ActionReplayCode {
@@ -70,6 +72,113 @@ export class DabMcpServer {
         };
       }
     );
+    this.server.tool(
+      "viewLatestScreenshot",
+      "View the latest screenshot taken.",
+      {},
+      async (_) => {
+        const filename = captureDolphinOffscreen(this.dme.getPID(), this.dme.gameID);
+        return {
+          content: [
+            { type: "text", text: `Successfully saved screenshot as ${filename}` },
+          ]
+        };
+      }
+    );
+    this.server.tool(
+      "viewLatestScreenshot",
+      "View the latest screenshot taken.",
+      {},
+      async (_) => {
+        try {
+          const files = (await readdir(SCREENSHOTS_DIR)).sort();
+          const latestFile = files[files.length - 1];
+          const filePath = path.join(SCREENSHOTS_DIR, latestFile!);
+          
+          // Check if file exists and is a PNG
+          if (!await isPngFile(filePath)) {
+            throw new Error(`File ${latestFile} is not a valid PNG screenshot`);
+          }
+          
+          // Read the file as Base64
+          const fileBuffer = await readFile(filePath);
+          const base64Data = fileBuffer.toString('base64');
+          
+          return {
+            content: [
+              { type: "image", data: `data:image/png;base64,${base64Data}`, mimeType: "image/png" },
+            ]
+          };
+        } catch (error: any) {
+          return {
+            content: [
+              { type: "text", text: "Could not get latest screenshot" },
+            ]
+          };
+        }
+      }
+    );
+    // this.server.resource(
+    //   "list-screenshots",
+    //   "screenshots://list",
+    //   async (uri) => {
+    //     try {
+    //       const files = await readdir(SCREENSHOTS_DIR);
+    //       const screenshotFiles = [];
+          
+    //       for (const file of files) {
+    //         const filePath = path.join(SCREENSHOTS_DIR, file);
+    //         if (await isPngFile(filePath)) {
+    //           screenshotFiles.push(file);
+    //         }
+    //       }
+          
+    //       return {
+    //         contents: [
+    //           {
+    //             uri: uri.href,
+    //             text: JSON.stringify({ screenshots: screenshotFiles }, null, 2)
+    //           }
+    //         ]
+    //       };
+    //     } catch (error: any) {
+    //       console.error("Error listing screenshots:", error);
+    //       throw new Error(`Failed to list screenshots: ${error.message}`);
+    //     }
+    //   }
+    // );
+    // this.server.resource(
+    //   "get-latest-screenshot",
+    //   "screenshots://latest",
+    //   async (uri) => {
+    //     try {
+    //       const files = (await readdir(SCREENSHOTS_DIR)).sort();
+    //       const latestFile = files[files.length - 1];
+    //       const filePath = path.join(SCREENSHOTS_DIR, latestFile!);
+          
+    //       // Check if file exists and is a PNG
+    //       if (!await isPngFile(filePath)) {
+    //         throw new Error(`File ${latestFile} is not a valid PNG screenshot`);
+    //       }
+          
+    //       // Read the file as Base64
+    //       const fileBuffer = await readFile(filePath);
+    //       const base64Data = fileBuffer.toString('base64');
+          
+    //       return {
+    //         contents: [
+    //           {
+    //             uri: uri.href,
+    //             text: `data:image/png;base64,${base64Data}`
+    //           }
+    //         ]
+    //       };
+    //     } catch (error: any) {
+    //       console.error(`Error getting screenshot ${uri.pathname}:`, error);
+    //       throw new Error(`Failed to get screenshot: ${error.message}`);
+    //     }
+    //   }
+    // );
   }
 
   async connect() {
