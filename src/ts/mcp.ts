@@ -1,3 +1,4 @@
+import { captureDolphinOffscreen } from "@/ts/dolphin/dolphin-interactor.js";
 import { DolphinMemoryEngine } from "@/ts/dolphin/dolphin-memory-engine.js";
 import { hexToBytes } from "@/ts/utils.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -12,10 +13,10 @@ export interface ActionReplayCode {
 
 export class DabMcpServer {
   private server: McpServer;
-  private dme?: DolphinMemoryEngine;
+  private dme: DolphinMemoryEngine;
   private transport: StdioServerTransport;
 
-  constructor() {
+  constructor(dme: DolphinMemoryEngine) {
     this.server = new McpServer({
       name: "Dolphin-Ai-Buddy",
       version: "0.0.1",
@@ -23,9 +24,6 @@ export class DabMcpServer {
     this.transport = new StdioServerTransport();
 
     this.registerBasicTools();
-  }
-
-  setDME(dme: DolphinMemoryEngine) {
     this.dme = dme;
   }
 
@@ -55,6 +53,19 @@ export class DabMcpServer {
           content: [
             { type: "text", text: `Wrote ${buffer.length} bytes to offset ${offset}` },
             { type: "text", text: `Data: ${buffer.toString("hex")}` }
+          ]
+        };
+      }
+    );
+    this.server.tool(
+      "captureScreenshot",
+      "Take a screenshot of the game.",
+      {},
+      async (_) => {
+        const filename = captureDolphinOffscreen(this.dme.getPID(), this.dme.gameID);
+        return {
+          content: [
+            { type: "text", text: `Successfully saved screenshot as ${filename}` },
           ]
         };
       }

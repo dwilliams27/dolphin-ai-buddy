@@ -28,13 +28,10 @@ import { captureDolphinOffscreen } from '@/ts/dolphin/dolphin-interactor.js';
 
 // initMemoryEngine();
 
-const mcpInstance = new DabMcpServer();
-mcpInstance.connect();
-
 const dme = new DolphinMemoryEngine();
-// captureDolphinOffscreen('screenshot.png', dme.getPID(), dme.gameID);
-
-mcpInstance.setDME(dme);
+const mcpInstance = new DabMcpServer(dme);
+mcpInstance.connect();
+captureDolphinOffscreen(dme.getPID(), dme.gameID);
 
 process.on('SIGINT', () => {
   console.log('Shutting down MCP server...');

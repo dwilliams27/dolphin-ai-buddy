@@ -61,3 +61,14 @@ export function hexToBytes(hexString: string) {
   // Convert hex to decimal
   return parseInt(hexString, 16);
 }
+
+export function generateTimestampedFilename(prefix: string, extension: string): string {
+  const now = new Date();
+  
+  // Format: HH-MM-SS
+  const timestamp = String(now.getHours()).padStart(2, '0') + '-' +
+    String(now.getMinutes()).padStart(2, '0') + '-' +
+    String(now.getSeconds()).padStart(2, '0');
+  
+  return `${prefix}_${timestamp}.${extension}`;
+}
