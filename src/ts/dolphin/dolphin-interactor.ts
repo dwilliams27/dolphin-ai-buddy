@@ -74,8 +74,6 @@ export class DolphinInteractor {
   //       end repeat
         
   //       if targetWindow is not null then
-  //         -- Focus the window first
-  //         set frontmost of targetProcess to true
   //         tell targetProcess
   //           tell targetWindow
   //             key code ${getKeyCode(key)}${modifier ? ` using ${modifier.toLowerCase()}` : ''} 
