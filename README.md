@@ -13,7 +13,7 @@
 ╚═╝  ╚═╝╚═╝              ╚═════╝  ╚═════╝ ╚═════╝ ╚═════╝    ╚═╝ 
 ```
 
-Tools for reading/writing memory to dolphin games on mac, wrapped with typescript for easy integration.
+Tools for interacting with dolphin emulator on mac, wrapped with typescript and stuffed into an MCP server.
 
 ## Re-signing Dolphin
 If you don't want to turn off SIP, you'll have to re-sign Dolphin with a cert to allow `dolphin-ai-buddy` to read/write memory directly to it.
@@ -55,4 +55,6 @@ cd certs
 Note: This also runs the app via `sudo`, definitely not ideal :(
 
 ## cpp
-C++ integration based on randovania's [py-dolphin-memory-engine](https://github.com/randovania/py-dolphin-memory-engine), used under the MIT license.
+C++ integration for the memory_accessor based on randovania's [py-dolphin-memory-engine](https://github.com/randovania/py-dolphin-memory-engine), used under the MIT license.
+
+A lot of the other Objective-C code comes from my good friend Claude.
