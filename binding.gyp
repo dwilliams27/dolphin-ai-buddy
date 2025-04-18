@@ -3,10 +3,10 @@
     {
       "target_name": "dolphin_memory",
       "sources": [
-        "src/cpp/memory_accessor_main.cpp",
-        "src/cpp/memory_accessor.cpp",
-        "src/cpp/memory_common.cpp",
-        "src/cpp/mac_dolphin_process.cpp"
+        "src/cpp/memory_accessor/memory_accessor_main.cpp",
+        "src/cpp/memory_accessor/memory_accessor.cpp",
+        "src/cpp/memory_accessor/memory_common.cpp",
+        "src/cpp/memory_accessor/mac_dolphin_process.cpp"
       ],
       "include_dirs": ["<!@(node -p \"require('node-addon-api').include\")"],
       "dependencies": ["<!(node -p \"require('node-addon-api').gyp\")"],
@@ -22,8 +22,8 @@
     {
       "target_name": "offscreen_capture",
       "sources": [
-        "src/cpp/offscreen_capture_main.cpp",
-        "src/cpp/offscreen_capture.mm"
+        "src/cpp/offscreen_capture/offscreen_capture_main.cpp",
+        "src/cpp/offscreen_capture/offscreen_capture.mm"
       ],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")"
@@ -44,6 +44,27 @@
         "OTHER_LDFLAGS": [
           "-framework CoreGraphics",
           "-framework AppKit",
+          "-framework ApplicationServices",
+          "-framework Cocoa"
+        ]
+      }
+    },
+    {
+      "target_name": "send_keys",
+      "sources": [ "src/cpp/send_keys/send_keys.mm" ],
+      "include_dirs": [
+        "<!@(node -p \"require('node-addon-api').include\")"
+      ],
+      "dependencies": [
+        "<!(node -p \"require('node-addon-api').gyp\")"
+      ],
+      "cflags!": [ "-fno-exceptions" ],
+      "cflags_cc!": [ "-fno-exceptions" ],
+      "xcode_settings": {
+        "GCC_ENABLE_CPP_EXCEPTIONS": "YES",
+        "CLANG_CXX_LIBRARY": "libc++",
+        "MACOSX_DEPLOYMENT_TARGET": "10.14",
+        "OTHER_LDFLAGS": [
           "-framework ApplicationServices",
           "-framework Cocoa"
         ]

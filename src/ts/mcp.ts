@@ -1,4 +1,4 @@
-import { captureDolphinOffscreen } from "@/ts/dolphin/dolphin-interactor.js";
+import { DolphinInteractor } from "@/ts/dolphin/dolphin-interactor.js";
 import { DolphinMemoryEngine } from "@/ts/dolphin/dolphin-memory-engine.js";
 import { hexToBytes, isPngFile, SCREENSHOTS_DIR } from "@/ts/utils.js";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -15,10 +15,10 @@ export interface ActionReplayCode {
 
 export class DabMcpServer {
   private server: McpServer;
-  private dme: DolphinMemoryEngine;
+  private interactor: DolphinInteractor;
   private transport: StdioServerTransport;
 
-  constructor(dme: DolphinMemoryEngine) {
+  constructor(interactor: DolphinInteractor) {
     this.server = new McpServer({
       name: "Dolphin-Ai-Buddy",
       version: "0.0.1",
@@ -26,7 +26,7 @@ export class DabMcpServer {
     this.transport = new StdioServerTransport();
 
     this.registerBasicTools();
-    this.dme = dme;
+    this.interactor = interactor;
   }
 
   registerBasicTools() {
@@ -35,7 +35,7 @@ export class DabMcpServer {
       "Read memory directly from the emulator's RAM. You MUST specify both an offset (as a hex string) from the starting address of the game's RAM, and the number of bytes to read.",
       { offset: z.string(), numberOfBytesToRead: z.number().nonnegative() },
       async ({ offset, numberOfBytesToRead }) => {
-        const data = this.dme?.read(hexToBytes(offset), numberOfBytesToRead);
+        const data = this.interactor.dme?.read(hexToBytes(offset), numberOfBytesToRead);
         return {
           content: [
             { type: "text", text: `Read ${numberOfBytesToRead} bytes from offset ${offset}` },
@@ -50,7 +50,7 @@ export class DabMcpServer {
       { offset: z.string(), data: z.string() },
       async ({ offset, data }) => {
         const buffer = Buffer.from(data, "hex");
-        const success = this.dme?.write(hexToBytes(offset), buffer);
+        const success = this.interactor.dme?.write(hexToBytes(offset), buffer);
         return {
           content: [
             { type: "text", text: `Wrote ${buffer.length} bytes to offset ${offset}` },
@@ -64,20 +64,7 @@ export class DabMcpServer {
       "Take a screenshot of the game.",
       {},
       async (_) => {
-        const filename = captureDolphinOffscreen(this.dme.getPID(), this.dme.gameID);
-        return {
-          content: [
-            { type: "text", text: `Successfully saved screenshot as ${filename}` },
-          ]
-        };
-      }
-    );
-    this.server.tool(
-      "viewLatestScreenshot",
-      "View the latest screenshot taken.",
-      {},
-      async (_) => {
-        const filename = captureDolphinOffscreen(this.dme.getPID(), this.dme.gameID);
+        const filename = this.interactor.captureDolphinOffscreen();
         return {
           content: [
             { type: "text", text: `Successfully saved screenshot as ${filename}` },

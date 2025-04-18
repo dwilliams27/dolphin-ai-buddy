@@ -89,3 +89,24 @@ export async function isPngFile(filePath: string): Promise<boolean> {
     return false;
   }
 }
+
+export function getKeyCode(key: string): number {
+  const keyCodes: Record<string, number> = {
+    '~': 50,
+    '1': 18,
+    'F1': 122,
+    'F2': 120,
+    'F3': 99,
+    'F4': 118,
+    'F5': 96,
+    'F6': 97,
+    'F7': 98,
+    'F8': 100,
+    'F9': 101,
+    'F10': 109,
+    'F11': 103,
+    'F12': 111,
+  };
+  
+  return keyCodes[key] || 0;
+}

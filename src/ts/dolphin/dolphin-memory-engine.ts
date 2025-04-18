@@ -10,7 +10,6 @@ export class DolphinMemoryEngine {
   private static instance: DolphinMemoryEngine;
   private accessor: any;
   private emuRamStartAddress: number = 0;
-  gameID: string = "";
   
   constructor() {
     if (DolphinMemoryEngine.instance) {
@@ -21,7 +20,6 @@ export class DolphinMemoryEngine {
     this.emuRamStartAddress = this.hook();
 
     console.error("## Start address:", this.emuRamStartAddress.toString(16));
-    this.gameID = this.read(0, 6).toString('utf-8');
   }
   
   private hook(): number {

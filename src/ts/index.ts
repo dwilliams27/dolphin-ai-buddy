@@ -1,7 +1,5 @@
-import { extractStringsFromBuffer, hexDump } from '@/ts/utils.js';
 import { DabMcpServer } from '@/ts/mcp.js';
-import { DolphinMemoryEngine } from '@/ts/dolphin/dolphin-memory-engine.js';
-import { captureDolphinOffscreen } from '@/ts/dolphin/dolphin-interactor.js';
+import { DolphinInteractor } from '@/ts/dolphin/dolphin-interactor.js';
 
 // async function initMemoryEngine() {
 //   console.log("Initializing Dolphin Memory Engine...");
@@ -28,10 +26,11 @@ import { captureDolphinOffscreen } from '@/ts/dolphin/dolphin-interactor.js';
 
 // initMemoryEngine();
 
-const dme = new DolphinMemoryEngine();
-const mcpInstance = new DabMcpServer(dme);
+const interactor = new DolphinInteractor();
+const mcpInstance = new DabMcpServer(interactor);
 mcpInstance.connect();
-captureDolphinOffscreen(dme.getPID(), dme.gameID);
+interactor.captureDolphinOffscreen();
+interactor.sendKeys('1');
 
 process.on('SIGINT', () => {
   console.log('Shutting down MCP server...');
