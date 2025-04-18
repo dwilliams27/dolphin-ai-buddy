@@ -42,6 +42,52 @@ void SimulateKeyWithModifiers(CGKeyCode keyCode, CGEventFlags modifiers) {
     CFRelease(source);
 }
 
+void TemporarilyFocusWindowAndSendKey(CGWindowID windowID, CGKeyCode keyCode) {
+    // Save current focused process/window
+    pid_t previouslyFocusedPID = -1;
+    CGWindowID previouslyFocusedWindow = 0;
+    
+    // Get currently focused application
+    NSRunningApplication* frontmostApp = [[NSWorkspace sharedWorkspace] frontmostApplication];
+    if (frontmostApp != nil) {
+        previouslyFocusedPID = [frontmostApp processIdentifier];
+    }
+    
+    // Focus target window by finding its application and activating
+    CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionAll, kCGNullWindowID);
+    for (id windowInfo in (__bridge NSArray*)windowList) {
+        NSDictionary* window = (__bridge NSDictionary*)windowInfo;
+        NSNumber* windowNumberObj = [window objectForKey:(id)kCGWindowNumber];
+        
+        if ([windowNumberObj unsignedIntValue] == windowID) {
+            NSNumber* windowPID = [window objectForKey:(id)kCGWindowOwnerPID];
+            pid_t targetPID = [windowPID intValue];
+            
+            // Get application for PID
+            NSRunningApplication* app = [NSRunningApplication runningApplicationWithProcessIdentifier:targetPID];
+            if (app != nil) {
+                [app activateWithOptions:NSApplicationActivateIgnoringOtherApps];
+                // Brief delay to ensure focus has changed
+                usleep(100000); // 100ms
+            }
+            break;
+        }
+    }
+    CFRelease(windowList);
+    
+    // Send the keystroke now that we're focused
+    PressAndReleaseKey(keyCode, 50000);
+    
+    // Restore previous focus if we saved it
+    if (previouslyFocusedPID != -1) {
+        NSRunningApplication* previousApp = [NSRunningApplication runningApplicationWithProcessIdentifier:previouslyFocusedPID];
+        if (previousApp != nil) {
+            usleep(100000); // Brief delay before switching back
+            [previousApp activateWithOptions:NSApplicationActivateIgnoringOtherApps];
+        }
+    }
+}
+
 // Find window with given title substring and PID
 bool FindWindowByTitleAndPID(pid_t pid, const char* titleSubstring, CGWindowID* outWindowID, char* outWindowTitle, size_t titleBufferSize) {
     CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionAll, kCGNullWindowID);
@@ -116,7 +162,7 @@ napi_value SendKeyToWindow(napi_env env, napi_callback_info info) {
     }
     
     // Send the keystroke directly (no window focus needed)
-    PressAndReleaseKey((CGKeyCode)keyCode, 50000); // 50ms delay
+    TemporarilyFocusWindowAndSendKey(windowID, (CGKeyCode)keyCode);
     
     napi_value successProp, windowIDValue, windowTitleValue;
     napi_get_boolean(env, true, &successProp);
